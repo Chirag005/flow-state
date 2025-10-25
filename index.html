@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FlowState Pomodoro Timer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      /* Background: soft white gradient with hint of pink/lilac */
+      background: linear-gradient(135deg, #fbefff 0%, #fcf7ff 40%, #e8e7f8 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Inter', Arial, sans-serif;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 8px 40px 6px rgba(169, 128, 224, 0.13);
+      border-radius: 40px;
+      padding: 48px 28px 38px 28px;
+      max-width: 350px;
+      width: 92vw;
+      text-align: center;
+      backdrop-filter: blur(19px);
+      border: 1.5px solid rgba(220, 208, 255, 0.12);
+    }
+    .title {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #1b1c2a;
+      margin-bottom: 38px;
+      letter-spacing: -1px;
+    }
+    .circle-timer {
+      position: relative;
+      width: 210px;
+      height: 210px;
+      margin: 0 auto 28px auto;
+    }
+    .progress-ring {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    .timer-text {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.6rem;
+      font-weight: 700;
+      color: #22223a;
+      letter-spacing: 1px;
+      user-select: none;
+    }
+    .caption {
+      font-size: 1.06rem;
+      color: #6c6c81;
+      opacity: 0.87;
+      margin-bottom: 37px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+    }
+    .btn {
+      flex: 1;
+      padding: 18px 0;
+      border: none;
+      border-radius: 28px;
+      font-size: 1.13rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 3px 20px 0 rgba(173,138,255,0.18), 0 7px 22px 6px rgba(242,174,204,0.14);
+      transition:
+        box-shadow 0.20s cubic-bezier(.4,2,.3,1),
+        transform 0.18s cubic-bezier(.4,2,.3,1),
+        background 0.25s;
+      outline: none;
+      position: relative;
+    }
+    .btn-start {
+      background: #b0b0ff;
+      color: #32226d;
+      /* Shadow for raised/lit look */
+      box-shadow: 0 8px 36px 0 rgba(159,140,232,0.21);
+      filter: drop-shadow(0 2px 16px #e8e3fa7a);
+    }
+    .btn-pause {
+      background: #ffd4e1;
+      color: #ce7264;
+      box-shadow: 0 8px 36px 0 rgba(242,166,192,0.16);
+      filter: drop-shadow(0 2px 16px #ffe1f3a9);
+    }
+    .btn:hover,
+    .btn-start:hover,
+    .btn-pause:hover {
+      box-shadow: 0 12px 54px 0 rgba(164,123,244,0.27), 0 0.5px 9px 0 rgba(255,184,222,0.15);
+      transform: scale(1.06) translateY(-2.5px);
+      filter: brightness(1.06) saturate(1.09);
+    }
+    .btn:active,
+    .btn-start:active,
+    .btn-pause:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 9px rgba(142,108,255,0.14);
+    }
+    @media (max-width:480px) {
+      .container { padding: 16px 3vw; }
+      .circle-timer { width: 145px; height: 145px; }
+      .title { font-size: 1.12rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">Focus Session</div>
+    <div class="circle-timer">
+      <svg class="progress-ring" width="210" height="210">
+        <circle
+          stroke="#f8daf1"
+          stroke-width="10"
+          fill="none"
+          cx="105"
+          cy="105"
+          r="85"
+          style="opacity:0.85"
+        />
+        <circle
+          id="timer-progress"
+          stroke="#22223a"
+          stroke-width="10"
+          fill="none"
+          cx="105"
+          cy="105"
+          r="85"
+          stroke-linecap="round"
+          style="transition: stroke-dasharray 0.3s;"
+        />
+      </svg>
+      <div class="timer-text" id="timer-label">25:00</div>
+    </div>
+    <div class="caption">Time for a wellbeing break!</div>
+    <div class="buttons">
+      <button class="btn btn-start" id="startPauseBtn">Start</button>
+      <button class="btn btn-pause" id="resetBtn">Pause</button>
+    </div>
+  </div>
+  <script>
+    // Pomodoro timer logic
+    const WORK_TIME = 25 * 60;
+    let time = WORK_TIME;
+    let timer = null;
+    let running = false;
+
+    const timerLabel = document.getElementById('timer-label');
+    const startPauseBtn = document.getElementById('startPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const ring = document.getElementById('timer-progress');
+
+    // SVG ring calculations
+    const RADIUS = 85;
+    const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+    ring.setAttribute('stroke-dasharray', `${CIRCUMFERENCE},${CIRCUMFERENCE}`);
+    ring.setAttribute('stroke-dashoffset', CIRCUMFERENCE);
+
+    function formatTime(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateTimerDisplay() {
+      timerLabel.textContent = formatTime(time);
+
+      // Update SVG ring progress
+      const percent = (WORK_TIME - time) / WORK_TIME;
+      const offset = CIRCUMFERENCE * (1 - percent);
+      ring.setAttribute('stroke-dashoffset', offset);
+    }
+
+    function tick() {
+      if (time > 0) {
+        time--;
+        updateTimerDisplay();
+      } else {
+        clearInterval(timer);
+        running = false;
+        startPauseBtn.textContent = "Start";
+        resetBtn.textContent = "Pause";
+        timerLabel.textContent = "00:00";
+        ring.setAttribute('stroke-dashoffset', CIRCUMFERENCE);
+      }
+    }
+
+    startPauseBtn.onclick = () => {
+      if (!running) {
+        timer = setInterval(tick, 1000);
+        running = true;
+        startPauseBtn.textContent = "Pause";
+        resetBtn.textContent = "Reset";
+      } else {
+        clearInterval(timer);
+        running = false;
+        startPauseBtn.textContent = "Start";
+        resetBtn.textContent = "Pause";
+      }
+    };
+
+    resetBtn.onclick = () => {
+      if (resetBtn.textContent === "Reset") {
+        clearInterval(timer);
+        running = false;
+        time = WORK_TIME;
+        updateTimerDisplay();
+        startPauseBtn.textContent = "Start";
+        resetBtn.textContent = "Pause";
+      }
+    };
+
+    updateTimerDisplay();
+  </script>
+</body>
+</html>
