@@ -67,12 +67,14 @@ Interaction: Live label/button toggling for stateful UX
 
 ************************************************************************************************
 
-Technology  |  Why Used                                 
-------------+-------------------------------------------
-HTML5       |  Universal support, semantic structuring  
-CSS3        |  Advanced gradients, flexbox, animations  
-JavaScript  |  Native, simple timer and UI interactivity
-SVG         |  Crisp, scalable circular timer           
+| Technology | Why Used |  
+|------------|----------|  
+| HTML5      | Universal support, semantic structuring |  
+| CSS3       | Advanced gradients, flexbox, animations |  
+| JavaScript | Native, simple timer and UI interactivity |  
+| SVG        | Crisp, scalable circular timer |  
+
+This stack guarantees broad compatibility, minimal dependencies, instant performance, and is easy to host anywhere. The static approach keeps all logic simple for easier code review.     
 
 ************************************************************************************************
 
